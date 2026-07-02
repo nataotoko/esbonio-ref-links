@@ -1,0 +1,19 @@
+[build-system]
+# >=77 for SPDX license expression support in [project].license
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "esbonio-zed-links"
+version = "0.1.0"
+description = "Line-precise LSP document links for esbonio + Zed (server feature and Sphinx extension)"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+# Intentionally no dependencies: esbonio_zed_links is loaded inside an
+# esbonio server environment, esbonio_object_locations inside a Sphinx build
+# environment; each host environment already provides what the module needs.
+dependencies = []
+
+[tool.setuptools]
+py-modules = ["esbonio_zed_links", "esbonio_object_locations"]
