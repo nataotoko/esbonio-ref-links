@@ -10,17 +10,18 @@ makes it possible to expose links that esbonio deliberately leaves out because
 
 Load this module into the esbonio language server with::
 
-   esbonio server --include esbonio_zed_links
+   esbonio server --include esbonio_ref_links.document_links
 
 The module must be importable by the Python environment esbonio runs in, e.g.
-``pip install -e <zed-rst>/lsp`` into that environment.
+``pip install <path-to-esbonio-ref-links>`` into that environment.
 
 Links provided (all resolved against the local Sphinx project):
 
 - ``:ref:`` and any other role backed by esbonio's ``objects`` database
   (``std:label``, ``std:term``, ...).  Links point at the recorded object
   location when available -- see the companion Sphinx extension
-  ``esbonio_object_locations`` -- and fall back to the top of the target
+  ``esbonio_ref_links.object_locations`` -- and fall back to the top of the
+  target
   document otherwise.  Roles that esbonio already links (``:doc:``,
   ``:download:``, intersphinx) are left untouched.
 - Named hyperlink references (``name_``, ```phrase name`_``), resolved against
@@ -35,7 +36,8 @@ does not consult the doctree, so occurrences inside literal blocks may produce
 false-positive links.  Name matching approximates docutils' normalization
 (lower-casing is ASCII-only on the SQL side).
 
-License: Apache-2.0 (same as the zed-rst repository this module ships with).
+License: Apache-2.0 (same as the esbonio-ref-links repository this module
+ships with).
 
 Attribution: the role-scanning / link-range arithmetic and the shape of the
 objects-database queries are adapted from esbonio
@@ -220,7 +222,7 @@ def _overlaps(span: tuple[int, int], claimed: list[tuple[int, int]]) -> bool:
     return any(not (end <= s or e <= start) for s, e in claimed)
 
 
-class ZedDocumentLinks(server.LanguageFeature):
+class RefLinksFeature(server.LanguageFeature):
     """documentLink support for ``:ref:``-style roles and hyperlink references."""
 
     def __init__(self, roles: RolesFeature, manager: ProjectManager, *args, **kwargs):
@@ -411,4 +413,4 @@ def esbonio_setup(
     roles: RolesFeature,
     project_manager: ProjectManager,
 ):
-    esbonio.add_feature(ZedDocumentLinks(roles, project_manager, esbonio))
+    esbonio.add_feature(RefLinksFeature(roles, project_manager, esbonio))

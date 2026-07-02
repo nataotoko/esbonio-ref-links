@@ -1,7 +1,7 @@
 import pathlib
 import sys
 
-# Make the modules at the repo root importable (fixture -> tests -> root).
+# Make the package at the repo root importable (fixture -> tests -> root).
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 project = "fixture"
@@ -10,7 +10,7 @@ release = "0.0.0"
 
 extensions = [
     "sphinx.ext.autosectionlabel",
-    "esbonio_object_locations",
+    "esbonio_ref_links.object_locations",
 ]
 
 autosectionlabel_prefix_document = True

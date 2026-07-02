@@ -1,16 +1,18 @@
-# esbonio-zed-links
+# esbonio-ref-links
 
-Line-precise LSP document links for [esbonio](https://github.com/swyddfa/esbonio) +
-[Zed](https://zed.dev/): two Python modules that make `:ref:` roles and reST
-hyperlink references clickable, jumping to the exact source line via
-`file:///...#L<line>` URI fragments (which Zed resolves to in-file positions).
+Document links for reST references in
+[esbonio](https://github.com/swyddfa/esbonio): two Python modules that make
+`:ref:` roles and reST hyperlink references clickable, jumping to the exact
+source line via `file:///...#L<line>` URI fragments (which
+[Zed](https://zed.dev/) resolves to in-file positions).
 
-- **`esbonio_zed_links`** — an esbonio server module (loaded with `--include`)
+- **`esbonio_ref_links.document_links`** — an esbonio server module (loaded
+  with `--include`)
   that emits document links for `:ref:`-style roles (resolved through esbonio's
   objects database) and for hyperlink references (`name_`, `` `phrase`_ ``,
   `` `text <path-or-url>`__ ``, `.. _name:` targets in the same file). Roles
   esbonio already links (`:doc:`, `:download:`, intersphinx) are left untouched.
-- **`esbonio_object_locations`** — a Sphinx extension that records the exact
+- **`esbonio_ref_links.object_locations`** — a Sphinx extension that records the exact
   source line of `std:label` / `std:term` objects (autosectionlabel labels,
   glossary terms) into esbonio's database after each build. Without it the
   links above still land at the top of the target document; it also makes
@@ -35,7 +37,7 @@ Assuming esbonio and Sphinx run from your project venv:
        "esbonio": {
          "binary": {
            "path": ".venv/Scripts/esbonio.exe",
-           "arguments": ["server", "--include", "esbonio_zed_links"]
+           "arguments": ["server", "--include", "esbonio_ref_links.document_links"]
          },
          "settings": {
            "esbonio": {
@@ -59,7 +61,7 @@ Assuming esbonio and Sphinx run from your project venv:
    ```python
    extensions = [
        # ...
-       "esbonio_object_locations",
+       "esbonio_ref_links.object_locations",
    ]
    ```
 
@@ -90,4 +92,4 @@ build finishes shows no links until then.
 Apache-2.0. The role-scanning / link-range arithmetic and the shape of the
 objects-database queries are adapted from
 [esbonio](https://github.com/swyddfa/esbonio) (MIT License, Copyright (c) 2021
-Alex Carney) — see the `esbonio_zed_links` module docstring.
+Alex Carney) — see the `esbonio_ref_links.document_links` module docstring.

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""Verify esbonio_zed_links / esbonio_object_locations against a fixture project.
+"""Verify esbonio_ref_links (document_links / object_locations) against a
+fixture project.
 
 Run through tests/run_tests.sh with a python that has esbonio + sphinx
 installed. stderr = progress/debug, stdout = result summary.
@@ -16,7 +17,7 @@ import sqlite3
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-LSP_DIR = HERE.parent
+ROOT_DIR = HERE.parent
 FIXTURE = HERE / "fixture"
 
 failures: list[str] = []
@@ -238,8 +239,8 @@ def main() -> int:
     workdir = pathlib.Path(args.workdir).resolve()
     workdir.mkdir(parents=True, exist_ok=True)
 
-    sys.path.insert(0, str(LSP_DIR))
-    import esbonio_zed_links as ezl
+    sys.path.insert(0, str(ROOT_DIR))
+    from esbonio_ref_links import document_links as ezl
 
     test_regexes(ezl)
 

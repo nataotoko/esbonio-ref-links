@@ -2,7 +2,7 @@
 """Build a real Sphinx project through esbonio's agent machinery and report
 std:label / std:term location coverage, plus optional name resolutions.
 
-Unlike run_tests.py this imports esbonio_zed_links from the interpreter's
+Unlike run_tests.py this imports esbonio_ref_links from the interpreter's
 installed packages (not from the repo), so it also validates the install.
 
 Run through tests/probe_project.sh. stderr = build output, stdout = report.
@@ -68,7 +68,7 @@ def main() -> int:
         print(f"   {objtype:5} {name!r} doc={docname} line0={line}")
 
     if args.names:
-        import esbonio_zed_links as ezl
+        from esbonio_ref_links import document_links as ezl
         from esbonio.server.features.project_manager import Project
 
         async def resolve_names():

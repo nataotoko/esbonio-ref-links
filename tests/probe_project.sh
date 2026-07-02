@@ -2,7 +2,7 @@
 # usage: probe_project.sh <python> <srcdir> <workdir> [name ...]
 #
 # <python> must have esbonio, sphinx, the project's build deps and
-# esbonio-zed-links installed. stderr = build output, stdout = report.
+# esbonio-ref-links installed. stderr = build output, stdout = report.
 set -euxo pipefail
 
 PYTHON="${1:?usage: probe_project.sh <python> <srcdir> <workdir> [name ...]}"

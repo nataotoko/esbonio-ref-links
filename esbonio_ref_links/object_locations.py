@@ -5,9 +5,9 @@ esbonio's sphinx agent only records locations for ``nodes.target`` elements
 (``esbonio/sphinx_agent/handlers/domains.py``).  Labels registered directly
 with the std domain -- e.g. by ``sphinx.ext.autosectionlabel`` or glossary
 terms -- carry no ``location``, so ``textDocument/definition`` (and the
-document links produced by the companion server module ``esbonio_zed_links``)
-cannot point at the exact line.  This extension fills those locations in after
-each build.
+document links produced by the companion server module
+``esbonio_ref_links.document_links``) cannot point at the exact line.  This
+extension fills those locations in after each build.
 
 Positions are read from the pickled doctrees (``env.get_doctree``), so the
 extension also works for incremental builds where unchanged documents never
@@ -17,7 +17,7 @@ Usage (``conf.py``)::
 
    extensions = [
        ...,
-       "esbonio_object_locations",
+       "esbonio_ref_links.object_locations",
    ]
 
 The module must be importable by the Python environment that runs the Sphinx
@@ -65,7 +65,7 @@ def record_locations(app: Sphinx, exc: Exception | None) -> None:
         from esbonio.sphinx_agent.util import as_json
     except ImportError:
         logger.warning(
-            "esbonio_object_locations: esbonio.sphinx_agent is not importable, "
+            "esbonio_ref_links.object_locations: esbonio.sphinx_agent is not importable, "
             "skipping"
         )
         return
@@ -119,7 +119,7 @@ def record_locations(app: Sphinx, exc: Exception | None) -> None:
         db.commit()
 
     logger.info(
-        "esbonio_object_locations: recorded %d object location(s)", len(updates)
+        "esbonio_ref_links.object_locations: recorded %d object location(s)", len(updates)
     )
 
 
@@ -132,7 +132,7 @@ def _find_location(
             doctrees[docname] = app.env.get_doctree(docname)
         except Exception:
             logger.warning(
-                "esbonio_object_locations: unable to load doctree for %r",
+                "esbonio_ref_links.object_locations: unable to load doctree for %r",
                 docname,
                 exc_info=True,
             )

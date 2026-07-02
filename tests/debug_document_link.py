@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Reproduce ZedDocumentLinks.document_link() against a real esbonio.db.
+"""Reproduce RefLinksFeature.document_link() against a real esbonio.db.
 
 Stubs the server/roles machinery just enough to run the full per-line scan,
 so exceptions raised by the feature surface directly instead of being
@@ -53,13 +53,13 @@ async def run(dbpath: str, files: list[str]) -> int:
     from lsprotocol import types as lsp
     from pygls.protocol import default_converter
 
-    import esbonio_zed_links as ezl
+    from esbonio_ref_links import document_links as ezl
     from esbonio.server import Uri
     from esbonio.server.feature import DocumentLinkContext
     from esbonio.server.features.project_manager import Project
 
     project = Project(dbpath, default_converter())
-    feature = ezl.ZedDocumentLinks(StubRoles(project), StubManager(project), StubServer())
+    feature = ezl.RefLinksFeature(StubRoles(project), StubManager(project), StubServer())
 
     status = 0
     try:
