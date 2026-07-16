@@ -1,8 +1,8 @@
 import pathlib
 import sys
 
-# Make the package at the repo root importable (fixture -> tests -> root).
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+# Make the package importable (fixture -> tests -> package root -> src).
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "src"))
 
 project = "fixture"
 author = "fixture"

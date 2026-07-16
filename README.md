@@ -1,95 +1,32 @@
-# esbonio-ref-links
+# esbonio-ref-links workspace
 
-Document links for reST references in
-[esbonio](https://github.com/swyddfa/esbonio): two Python modules that make
-`:ref:` roles and reST hyperlink references clickable, jumping to the exact
-source line via `file:///...#L<line>` URI fragments (which
-[Zed](https://zed.dev/) resolves to in-file positions).
+A [uv workspace](https://docs.astral.sh/uv/concepts/projects/workspaces/)
+bundling two independently installable packages, developed together under one
+lockfile and virtual environment:
 
-- **`esbonio_ref_links.document_links`** — an esbonio server module (loaded
-  with `--include`)
-  that emits document links for `:ref:`-style roles (resolved through esbonio's
-  objects database) and for hyperlink references (`name_`, `` `phrase`_ ``,
-  `` `text <path-or-url>`__ ``, `.. _name:` targets in the same file). Roles
-  esbonio already links (`:doc:`, `:download:`, intersphinx) are left untouched.
-- **`esbonio_ref_links.object_locations`** — a Sphinx extension that records the exact
-  source line of `std:label` / `std:term` objects (autosectionlabel labels,
-  glossary terms) into esbonio's database after each build. Without it the
-  links above still land at the top of the target document; it also makes
-  esbonio's go-to-definition line-precise for those objects. Outside an
-  esbonio-driven build (plain `sphinx-build`) it does nothing.
+- **`packages/esbonio-ref-links/`** — line-precise document links for reST
+  references in [esbonio](https://github.com/swyddfa/esbonio) (an esbonio
+  server module plus a Sphinx extension).
+- **`packages/sphinx-ref-extras/`** — standalone Sphinx reference/label
+  extensions: a nearest-in-toctree `sref` role, delimiter-scoped section
+  prefixes, and a `word_` term/label fallback.
 
-## Setup
+The two packages share no code; the workspace exists only to develop and version
+them side by side. Each has its own `README.md` and `pyproject.toml` under
+`packages/<name>/`.
 
-Assuming esbonio and Sphinx run from your project venv:
+## Development
 
-1. Install this package into that venv (both modules ship in one wheel):
+```
+uv sync                               # create .venv, editable-install both members + their deps
+uv sync --package sphinx-ref-extras   # operate on a single member
+```
 
-   ```
-   uv pip install <path-or-url-to-this-repo>
-   ```
+## Build / publish a member
 
-2. In your project's `.zed/settings.json`:
+```
+uv build --package sphinx-ref-extras
+uv build --package esbonio-ref-links
+```
 
-   ```json
-   {
-     "lsp": {
-       "esbonio": {
-         "binary": {
-           "path": ".venv/Scripts/esbonio.exe",
-           "arguments": ["server", "--include", "esbonio_ref_links.document_links"]
-         },
-         "settings": {
-           "esbonio": {
-             "sphinx": {
-               "pythonCommand": [".venv/Scripts/python.exe"]
-             }
-           }
-         }
-       }
-     }
-   }
-   ```
-
-   (POSIX layout uses `.venv/bin/`.) Zed applies `lsp.<id>.binary` overrides to
-   extension-provided servers — verified empirically, though undocumented; the
-   [zed-rst](https://github.com/nataotoko/zed-rst) extension >= 0.0.4 also
-   honors them itself as a safeguard.
-
-3. In your `conf.py`:
-
-   ```python
-   extensions = [
-       # ...
-       "esbonio_ref_links.object_locations",
-   ]
-   ```
-
-## Caveats
-
-Like esbonio's built-in features, link detection is a line-based regex scan, so
-examples inside literal blocks may be linkified (false positives). Links
-reflect the last build — new labels appear after a rebuild. Line-precise jumps
-require a client that resolves URI fragments on file links; Zed does, other
-editors may silently ignore them. Zed only re-requests document links on edit,
-buffer reopen, or language-server restart, so a buffer opened before the first
-build finishes shows no links until then.
-
-## Verification tools
-
-- `tests/run_tests.sh <python-with-esbonio> <scratch-dir>` — builds a fixture
-  project through the esbonio agent machinery and asserts recorded locations
-  and link resolution (22 checks).
-- `tests/probe_project.sh <python> <srcdir> <scratch-dir> [name ...]` — builds
-  a real project and reports `std:label` / `std:term` location coverage plus
-  optional name resolutions.
-- `tests/debug_document_link.sh <python> <esbonio.db> <file.rst>...` — replays
-  the documentLink scan for any file against a real esbonio database,
-  surfacing exceptions the server would swallow.
-
-## License
-
-Apache-2.0. The role-scanning / link-range arithmetic and the shape of the
-objects-database queries are adapted from
-[esbonio](https://github.com/swyddfa/esbonio) (MIT License, Copyright (c) 2021
-Alex Carney) — see the `esbonio_ref_links.document_links` module docstring.
+Each member is a separate distribution; build and `uv publish` them individually.

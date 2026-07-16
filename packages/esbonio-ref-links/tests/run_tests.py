@@ -17,7 +17,7 @@ import sqlite3
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-ROOT_DIR = HERE.parent
+ROOT_DIR = HERE.parent / "src"
 FIXTURE = HERE / "fixture"
 
 failures: list[str] = []

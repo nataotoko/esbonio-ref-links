@@ -1,0 +1,17 @@
+[build-system]
+# >=77 for SPDX license expression support in [project].license
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sphinx-ref-extras"
+version = "0.1.0"
+description = "Standalone Sphinx reference/label extensions: nearest-toctree sref role, delimiter-scoped section prefixes, and word_ term/label fallback"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+dependencies = ["sphinx"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["sphinx_ref_extras"]
