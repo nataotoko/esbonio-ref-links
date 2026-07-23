@@ -30,6 +30,12 @@ Links provided (all resolved against the local Sphinx project):
 - Embedded-target references (```text <target>`__``), resolved as URLs or as
   paths relative to the current document (or to the project source directory
   for ``/absolute`` targets).  Links are only emitted for paths that exist.
+- Citation references (``[CITE]_``), resolved against the objects database
+  (``citation:label``).  This requires the companion Sphinx extension
+  ``esbonio_ref_links.object_locations``: Sphinx's built-in ``CitationDomain``
+  never populates esbonio's objects database on its own (see that module's
+  docstring).  Footnote references (``[1]_``, ``[#]_``, ``[#name]_``,
+  ``[*]_``) are left untouched.
 
 Like esbonio's built-in features, detection is a line-based regex scan that
 does not consult the doctree, so occurrences inside literal blocks may produce
@@ -71,6 +77,9 @@ if typing.TYPE_CHECKING:
 OBJECT_TYPES = ("std:label", "std:term")
 """Object types used to resolve named hyperlink references."""
 
+CITATION_OBJECT_TYPES = ("citation:label",)
+"""Object type used to resolve citation references (``[CITE]_``)."""
+
 INLINE_LITERAL = re.compile(r"``[^`]*``")
 
 SIMPLENAME = r"(?:(?!_)\w)+(?:[-._+:](?:(?!_)\w)+)*"
@@ -89,6 +98,30 @@ HYPERLINK_REF = re.compile(
     """,
     re.VERBOSE,
 )
+
+CITATION_REF = re.compile(
+    rf"""
+    \[
+    (?:
+      [0-9]+                            # manually numbered footnote
+      |
+      \#(?:{SIMPLENAME})?                # auto-numbered footnote
+      |
+      \*                                 # auto-symbol footnote
+      |
+      (?P<citelabel>{SIMPLENAME})        # citation reference
+    )
+    \]_
+    (?![\w`])
+    """,
+    re.VERBOSE,
+)
+"""Matches docutils footnote/citation references (``[label]_``).  Only the
+``citelabel`` alternative is an actual citation; the others are footnote
+forms and are deliberately left unresolved.  The alternative order mirrors
+docutils' own ``footnotelabel`` pattern precedence
+(``docutils/parsers/rst/states.py``), so e.g. an all-digit label matches the
+footnote alternative, never ``citelabel``."""
 
 EMBEDDED_TARGET = re.compile(r"^(?P<text>.*?)\s*<(?P<target>[^<>]+)>$", re.DOTALL)
 
@@ -285,6 +318,20 @@ class RefLinksFeature(server.LanguageFeature):
 
                 links.append(self._make_link(context, resolved, linum, *span))
 
+            for match in CITATION_REF.finditer(line):
+                if not (label := match.group("citelabel")):
+                    continue  # footnote form ([1]_, [#]_, [#name]_, [*]_), not a citation
+                if _overlaps(match.span(), claimed):
+                    continue
+
+                resolved = await self._citation(project, label, cache)
+                if resolved is None:
+                    continue
+
+                links.append(
+                    self._make_link(context, resolved, linum, *match.span("citelabel"))
+                )
+
         return links or None
 
     def _make_link(
@@ -358,6 +405,14 @@ class RefLinksFeature(server.LanguageFeature):
         key = ("named", normalize_name(name))
         if key not in cache:
             cache[key] = await resolve_named(project, doc_uri, local_targets, name)
+        return cache[key]
+
+    async def _citation(self, project: Project, label: str, cache: dict) -> ResolvedTarget:
+        # Citation labels are matched verbatim by Sphinx's CitationDomain, not
+        # normalized like std:label/std:term -- so no normalize_name here.
+        key = ("citation", label)
+        if key not in cache:
+            cache[key] = await find_object(project, CITATION_OBJECT_TYPES, label)
         return cache[key]
 
     async def _reference_link(

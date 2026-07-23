@@ -15,6 +15,10 @@ Beta Section
 
 Embedded references: `other doc <other.rst>`__ and `missing <missing.rst>`__.
 
+See [CIT2002]_ for details.
+
+.. [CIT2002] A sample citation.
+
 .. glossary::
 
    term

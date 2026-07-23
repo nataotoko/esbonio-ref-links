@@ -89,6 +89,36 @@ def test_regexes(ezl):
         "normalize_name lowers and collapses whitespace",
     )
 
+    matches = list(ezl.CITATION_REF.finditer("see [CIT2002]_ for details"))
+    check(
+        len(matches) == 1 and matches[0].group("citelabel") == "CIT2002",
+        "citation reference matches",
+    )
+
+    matches = list(ezl.CITATION_REF.finditer("see [1]_ for details"))
+    check(
+        len(matches) == 1 and matches[0].group("citelabel") is None,
+        "manually numbered footnote is not a citation",
+    )
+
+    matches = list(ezl.CITATION_REF.finditer("see [#note]_ for details"))
+    check(
+        len(matches) == 1 and matches[0].group("citelabel") is None,
+        "auto-numbered footnote is not a citation",
+    )
+
+    matches = list(ezl.CITATION_REF.finditer("see [#]_ for details"))
+    check(
+        len(matches) == 1 and matches[0].group("citelabel") is None,
+        "anonymous auto-numbered footnote is not a citation",
+    )
+
+    matches = list(ezl.CITATION_REF.finditer("see [*]_ for details"))
+    check(
+        len(matches) == 1 and matches[0].group("citelabel") is None,
+        "auto-symbol footnote is not a citation",
+    )
+
 
 def build_fixture(workdir: pathlib.Path) -> pathlib.Path:
     outdir = workdir / "out"
@@ -134,12 +164,21 @@ def test_locations(dbpath: pathlib.Path):
         "SELECT name, objtype, docname, location FROM objects "
         "WHERE project IS NULL AND domain = 'std' AND objtype IN ('label', 'term')"
     ).fetchall()
+    citation_rows = db.execute(
+        "SELECT name, docname, location FROM objects "
+        "WHERE project IS NULL AND domain = 'citation' AND objtype = 'label'"
+    ).fetchall()
     db.close()
 
     log("std objects in db:")
     for name, objtype, docname, location in rows:
         loc_line = json.loads(location)["range"]["start"]["line"] if location else None
         log(f"   {objtype:5} {name!r:30} doc={docname} line={loc_line}")
+
+    log("citation objects in db:")
+    for name, docname, location in citation_rows:
+        loc_line = json.loads(location)["range"]["start"]["line"] if location else None
+        log(f"   citation {name!r:30} doc={docname} line={loc_line}")
 
     def loc_line(objtype: str, name: str):
         for name_, objtype_, _docname, location in rows:
@@ -162,6 +201,23 @@ def test_locations(dbpath: pathlib.Path):
         check(
             actual == expected,
             f"location of term {term!r} (actual={actual}, expected={expected})",
+        )
+
+    citation_entry = next(
+        ((n, d, loc) for n, d, loc in citation_rows if n == "CIT2002"), None
+    )
+    check(citation_entry is not None, "citation:label object 'CIT2002' recorded in db")
+    if citation_entry is not None:
+        _, _citation_docname, citation_location = citation_entry
+        actual = (
+            json.loads(citation_location)["range"]["start"]["line"]
+            if citation_location
+            else None
+        )
+        expected = line_of(".. [CIT2002] A sample citation.")
+        check(
+            actual == expected,
+            f"location of citation 'CIT2002' (actual={actual}, expected={expected})",
         )
 
 
@@ -193,6 +249,18 @@ async def resolution_tests(ezl, dbpath: pathlib.Path):
 
         result = await ezl.find_object(project, ("std:label",), "no-such-label")
         check(result is None, "find_object misses unknown label")
+
+        result = await ezl.find_object(project, ezl.CITATION_OBJECT_TYPES, "CIT2002")
+        expected_fragment = f"#L{line_of('.. [CIT2002] A sample citation.') + 1}"
+        check(
+            result is not None and result[0].endswith(expected_fragment),
+            f"find_object citation label -> {result}",
+        )
+
+        result = await ezl.find_object(
+            project, ezl.CITATION_OBJECT_TYPES, "no-such-citation"
+        )
+        check(result is None, "find_object misses unknown citation label")
 
         doc_uri = Uri.for_file(FIXTURE / "index.rst").resolve()
 

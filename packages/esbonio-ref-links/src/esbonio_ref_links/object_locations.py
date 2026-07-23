@@ -1,5 +1,5 @@
-"""Record source locations for ``std:label`` / ``std:term`` objects in
-esbonio's objects database.
+"""Record source locations for ``std:label`` / ``std:term`` objects, and add
+``citation:label`` objects outright, to esbonio's objects database.
 
 esbonio's sphinx agent only records locations for ``nodes.target`` elements
 (``esbonio/sphinx_agent/handlers/domains.py``).  Labels registered directly
@@ -8,6 +8,15 @@ terms -- carry no ``location``, so ``textDocument/definition`` (and the
 document links produced by the companion server module
 ``esbonio_ref_links.document_links``) cannot point at the exact line.  This
 extension fills those locations in after each build.
+
+Citations (``.. [CIT2002] ...`` / ``[CIT2002]_``) are missing outright rather
+than just missing a location: esbonio's ``DomainObjects.commit`` populates the
+``objects`` table by calling ``get_objects()`` on every domain, but Sphinx's
+built-in ``CitationDomain`` (``sphinx/domains/citation.py``) never overrides
+it, so citations never reach the table at all. This extension inserts them,
+using the line recorded by docutils for the ``.. [label]`` definition itself
+(``docutils/parsers/rst/states.py``, ``citation()``) directly -- no doctree
+lookup needed.
 
 Positions are read from the pickled doctrees (``env.get_doctree``), so the
 extension also works for incremental builds where unchanged documents never
@@ -72,6 +81,7 @@ def record_locations(app: Sphinx, exc: Exception | None) -> None:
 
     env = app.env
     std = env.get_domain("std")
+    db = esbonio.db.db  # sqlite3.Connection managed by the agent
 
     # (objtype, object name) -> (docname, node id)
     targets: dict[tuple[str, str], tuple[str, str]] = {}
@@ -83,7 +93,6 @@ def record_locations(app: Sphinx, exc: Exception | None) -> None:
         if objtype == "term":
             targets[("term", name)] = (docname, node_id)
 
-    db = esbonio.db.db  # sqlite3.Connection managed by the agent
     rows = db.execute(
         "SELECT rowid, name, objtype FROM objects "
         "WHERE project IS NULL AND domain = 'std' "
@@ -116,10 +125,39 @@ def record_locations(app: Sphinx, exc: Exception | None) -> None:
 
     if updates:
         db.executemany("UPDATE objects SET location = ? WHERE rowid = ?", updates)
+
+    inserts: list[tuple] = []
+    for label, (docname, _node_id, lineno) in env.get_domain("citation").citations.items():
+        if docname not in env.all_docs:
+            continue  # generated documents (genindex, search, ...) have no doctree
+
+        location = types.Location(
+            uri=str(types.Uri.for_file(env.doc2path(docname))),
+            range=types.Range(
+                start=types.Position(line=lineno - 1, character=0),
+                end=types.Position(line=lineno, character=0),
+            ),
+        )
+        inserts.append(
+            (label, "-", "citation", "label", docname, None, None, as_json(location))
+        )
+
+    if inserts:
+        db.executemany(
+            "INSERT INTO objects "
+            "(name, display, domain, objtype, docname, project, description, location) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            inserts,
+        )
+
+    if updates or inserts:
         db.commit()
 
     logger.info(
-        "esbonio_ref_links.object_locations: recorded %d object location(s)", len(updates)
+        "esbonio_ref_links.object_locations: recorded %d object location(s), "
+        "inserted %d citation object(s)",
+        len(updates),
+        len(inserts),
     )
 
 
