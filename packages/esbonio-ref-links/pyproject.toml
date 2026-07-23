@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "esbonio-ref-links"
-version = "0.1.0"
+version = "0.2.0"
 description = "Line-precise document links for reST references in esbonio (server feature and Sphinx extension)"
 readme = "README.md"
 license = "Apache-2.0"
