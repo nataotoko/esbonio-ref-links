@@ -10,3 +10,11 @@ package = false
 
 [tool.uv.workspace]
 members = ["packages/*"]
+
+[dependency-groups]
+# Not a runtime dependency of any workspace member (esbonio-ref-links is
+# intentionally dependency-free, see its pyproject.toml) -- pulled in only so
+# `uv sync --group test` gives packages/esbonio-ref-links/tests/run_tests.py a
+# python with esbonio + sphinx to build the fixture project and exercise
+# document_links / object_locations against a real esbonio.db.
+test = ["esbonio", "sphinx"]
